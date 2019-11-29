@@ -7,7 +7,7 @@ import maci.misc.tf_utils as U
 
 from maci.misc import tf_utils
 
-from .base import MARLAlgorithm
+from .base import MARLAlgorithm # A Multiagent Reinforcement Learning Algorithm
 
 EPS = 1e-6
 

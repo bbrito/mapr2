@@ -105,6 +105,7 @@ class MAVBAC(MARLAlgorithm):
         self._create_q_update()
         self._create_conditional_policy_svgd_update()
         self._create_p_update()
+        # target update
         self._create_target_ops()
 
         if use_saved_qf:
@@ -176,7 +177,7 @@ class MAVBAC(MARLAlgorithm):
         self._q_values = self.joint_qf.output_for(
             self._observations_ph, self._actions_pl, self._opponent_actions_pl, reuse=True)
         assert_shape(self._q_values, [None])
-
+        # This is not according to line 15
         next_value = self._annealing_pl * tf.reduce_logsumexp(q_value_targets / self._annealing_pl, axis=1)
 
         assert_shape(next_value, [None])
@@ -184,11 +185,11 @@ class MAVBAC(MARLAlgorithm):
         next_value -= tf.log(tf.cast(self._value_n_particles, tf.float32))
         next_value += (self._opponent_action_dim) * np.log(2)
 
-
+        # This is not according to line 15
         ys = tf.stop_gradient(self._reward_scale * self._rewards_pl + (
             1 - self._terminals_pl) * self._discount * next_value)
         assert_shape(ys, [None])
-
+        # Line 16 - Critic update
         bellman_residual = 0.5 * tf.reduce_mean((ys - self._q_values)**2)
         with tf.variable_scope('target_joint_qf_opt_agent_{}'.format(self._agent_id), reuse=tf.AUTO_REUSE):
             if self._train_qf:
@@ -292,6 +293,7 @@ class MAVBAC(MARLAlgorithm):
     def _create_conditional_policy_svgd_update(self):
         """Create a minimization operation for policy update (SVGD)."""
         # print('actions')
+        # actions is the output of a NN with inputs the actions, states and latent random variable
         actions = self.conditional_policy.actions_for(
             observations=self._observations_ph,
             actions=self._actions_pl,
@@ -334,7 +336,7 @@ class MAVBAC(MARLAlgorithm):
         # Target log-density. Q_soft in Equation 13:
         svgd_target_values = (svgd_target_values - baseline_ind_q) / self._annealing_pl
 
-
+        # What is this ?
         squash_correction = tf.reduce_sum(
             tf.log(1 - fixed_actions**2 + EPS), axis=-1)
         log_p = svgd_target_values + squash_correction

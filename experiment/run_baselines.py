@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument('-mu', "--mu", type=float, default=1.5, help="mu")
     parser.add_argument('-r', "--reward_type", type=str, default="abs", help="reward type")
     parser.add_argument('-mp', "--max_path_length", type=int, default=1, help="reward type")
-    parser.add_argument('-ms', "--max_steps", type=int, default=10000, help="reward type")
+    parser.add_argument('-ms', "--max_steps", type=int, default=10000, help="number of epochs")
     parser.add_argument('-me', "--memory", type=int, default=0, help="reward type")
     parser.add_argument('-n', "--n", type=int, default=2, help="name of the game")
     parser.add_argument('-bs', "--batch_size", type=int, default=512, help="name of the game")
@@ -54,7 +54,7 @@ def parse_args():
     parser.add_argument('-re', "--repeat", type=bool, default=False, help="name of the game")
     parser.add_argument('-a', "--aux", type=bool, default=True, help="name of the game")
     parser.add_argument('-gr', "--global_reward", type=bool, default=False, help="name of the game")
-    parser.add_argument('-m', "--model_names_setting", type=str, default='MADDPG_MADDPG', help="models setting agent vs adv")
+    parser.add_argument('-m', "--model_names_setting", type=str, default='PR2AC1_PR2AC1', help="models setting agent vs adv")
     return parser.parse_args()
 
 
@@ -115,11 +115,12 @@ def main(arglist):
     agents = []
     M = arglist.hidden_size
     batch_size = arglist.batch_size
+    # MultiAgent sampler
     sampler = MASampler(agent_num=agent_num, joint=True, global_reward=arglist.global_reward, max_path_length=25, min_pool_size=100, batch_size=batch_size)
 
     base_kwargs = {
         'sampler': sampler,
-        'epoch_length': 1,
+        'epoch_length': 100,
         'n_epochs': arglist.max_steps,
         'n_train_repeat': 1,
         'eval_render': True,
@@ -143,7 +144,7 @@ def main(arglist):
                 if model_name == 'DDPG':
                     joint = False
                     opponent_modelling = False
-                elif model_name == 'MADDPG':
+                elif model_name == 'MADDPG': # Multi-Agent Deep Deterministic Policy Gradient
                     joint = True
                     opponent_modelling = False
                 elif model_name == 'DDPG-OM':
@@ -249,12 +250,10 @@ def main(arglist):
                         target_next_actions_n.append(agent.target_policy.get_actions(batch['next_observations']))
                         opponent_current_actions_n.append(agent.policy.get_actions(batch['observations']))
 
+                    # update opponent actions
                     for i, agent in enumerate(agents):
                         batch_n[i]['opponent_current_actions'] = np.reshape(
                             np.delete(deepcopy(opponent_current_actions_n), i, 0), (-1, agent._opponent_action_dim))
-                    # except:
-                    #     pass
-
 
                     opponent_actions_n = np.array([batch['actions'] for batch in batch_n])
                     recent_opponent_actions_n = np.array([batch['actions'] for batch in recent_batch_n])

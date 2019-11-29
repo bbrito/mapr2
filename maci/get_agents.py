@@ -74,7 +74,7 @@ def get_level_k_policy(env, k, M, agent_id, u_range, opponent_conditional_policy
     if k % 2 == 1:
         opponent = True
 
-    base_policy = UniformPolicy(env.env_specs, agent_id=agent_id, opponent=opponent, urange=urange, if_softmax=if_softmax)
+    base_policy = UniformPolicy(env.env_specs, agent_id=agent_id, opponent=opponent, urange=urange, if_softmax=if_softmax) # random uniform
     conditional_policy = ConditionalDeterministicNNPolicy(env.env_specs,
                                                           hidden_layer_sizes=(M, M),
                                                           name='conditional_policy',
@@ -142,7 +142,7 @@ def pr2ac_agent(model_name, i, env, M, u_range, base_kwargs, k=0, g=False, mu=1.
 
 
 
-
+    # it looks the flag joint is not doing anything
     joint_qf = NNJointQFunction(env_spec=env.env_specs, hidden_layer_sizes=[M, M], joint=joint, agent_id=i)
     target_joint_qf = NNJointQFunction(env_spec=env.env_specs, hidden_layer_sizes=[M, M], name='target_joint_qf',
                                        joint=joint, agent_id=i)
